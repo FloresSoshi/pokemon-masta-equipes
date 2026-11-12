@@ -1,7 +1,7 @@
 // Pokémon Masta — sélection d'équipe (pseudo + personnage, puis 6 Pokémon)
 
 const TEAM_SIZE = 6;
-const MOVES_PER_MON = 8;
+const MOVES_PER_MON = 6;
 
 const TRAINERS = [
   ["player_m", "Lucas"], ["player_f", "Aurore"], ["barry", "Barry"], ["cynthia", "Cynthia"],
@@ -12,6 +12,12 @@ const TRAINERS = [
   ["hiker", "Montagnard"], ["lass", "Fillette"], ["youngster", "Gamin"], ["bug_catcher", "Scout"],
   ["psychic", "Kinésiste"], ["black_belt", "Karatéka"], ["battle_girl", "Combattante"], ["ninja_boy", "Ninja"],
   ["beauty", "Canon"], ["grunt_m", "Sbire Galaxie"], ["cowgirl", "Cowgirl"], ["clown", "Clown"],
+  ["mars", "Mars"], ["jupiter", "Jupiter"], ["saturn", "Saturne"], ["grunt_f", "Sbire Galaxie (F)"],
+  ["riley", "Armand"], ["cheryl", "Cheryl"], ["marley", "Marley"], ["buck", "Buck"],
+  ["mira", "Mira"], ["jasmine", "Jasmine"], ["palmer", "Palmer"], ["thorton", "Thorton"],
+  ["prof_rowan", "Professeur Sorbier"], ["prof_oak", "Professeur Chen"], ["rich_boy", "Petit riche"], ["socialite", "Mondaine"],
+  ["gentleman", "Gentleman"], ["idol", "Idole"], ["guitarist", "Guitariste"], ["swimmer_f", "Nageuse"],
+  ["swimmer_m", "Nageur"], ["fisherman", "Pêcheur"], ["sailor", "Marin"], ["policeman", "Policier"],
 ];
 
 // Couleurs de type (types de l'époque Platine : pas de type Fée)
@@ -176,7 +182,7 @@ $("validate").addEventListener("click", () => {
   goMon(0);
 });
 
-// ---- Étape 3 : 8 attaques par Pokémon, dans l'ordre de l'équipe ----
+// ---- Étape 3 : 6 attaques par Pokémon, dans l'ordre de l'équipe ----
 const CAT_FR = { physical: "Physique", special: "Spéciale", status: "Statut" };
 // « unknown » = type ??? de Platine (ex. Malédiction), absent des filtres de Pokémon
 const typeLabel = (t) => (TYPES[t] ? TYPES[t][0] : "???");
@@ -244,7 +250,8 @@ function renderMoves() {
   }
   $("move-list").querySelector(".empty").hidden = visible > 0;
 
-  $("prev-mon").textContent = state.cur === 0 ? "Retour à l'équipe" : "Précédent";
+  $("prev-mon").textContent = state.cur === 0 ? "Équipe" : "Précédent";
+  $("prev-mon").title = state.cur === 0 ? "Revenir au choix des Pokémon" : "";
   $("next-mon").textContent = state.cur === state.team.length - 1 ? "Terminer" : "Suivant";
   $("next-mon").classList.toggle("off", !full);
   renderDetail();
@@ -276,7 +283,7 @@ function renderDetail() {
     <p class="detail-desc">${esc(m.desc)}</p>
     <div class="detail-actions">
       ${has ? `<button class="btn" data-act="toggle">Oublier</button>`
-        : full ? `<span class="detail-full">8 attaques déjà choisies : oublies-en une d'abord.</span>`
+        : full ? `<span class="detail-full">${MOVES_PER_MON} attaques déjà choisies : oublies-en une d'abord.</span>`
         : `<button class="btn primary" data-act="toggle">Apprendre</button>`}
     </div>`;
   pop.hidden = false;
@@ -434,7 +441,7 @@ const loadImg = (src) => new Promise((ok, ko) => { const i = new Image(); i.onlo
 // Carte récap dessinée en pixels nets (police Platine, icônes de type)
 async function teamCard() {
   await document.fonts.load('32px "Platine"');
-  const colW = 420, headH = 112, rowH = 34, monH = headH + 8 * rowH + 20, pad = 16, top = 120;
+  const colW = 420, headH = 112, rowH = 34, monH = headH + MOVES_PER_MON * rowH + 20, pad = 16, top = 120;
   const W = pad * 2 + colW * 3 + 16 * 2, H = top + monH * 2 + 16 + pad;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const g = c.getContext("2d"); g.imageSmoothingEnabled = false;

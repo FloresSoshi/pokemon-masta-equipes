@@ -247,7 +247,7 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
 .step.wide { max-width: 1320px; }
 .type-icon { width: 64px; height: 32px; image-rendering: pixelated; display: inline-block; vertical-align: middle; flex: none; }
 .type-icons { display: flex; gap: 4px; margin: 6px 0; }
-.mon-tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.mon-tabs { grid-area: tabs; display: flex; gap: 6px; flex-wrap: wrap; }
 .mon-tab {
   display: flex; flex-direction: column; align-items: center;
   background: rgba(255,255,255,.6); border: var(--px) solid #b8b8c0; border-radius: 6px;
@@ -258,8 +258,13 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
 .mon-tab.done span { color: #3a8a3a; --ink-shadow: #c8e8c0; }
 .mon-tab span { text-shadow: var(--sh) 0 var(--ink-shadow), 0 var(--sh) var(--ink-shadow), var(--sh) var(--sh) var(--ink-shadow); }
 
-.moves-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; }
-.moves-left { position: sticky; top: 12px; }
+/* La colonne de gauche (Pokémon + 6 emplacements + boutons) part tout en haut et reste visible pendant qu'on fait défiler les attaques */
+.moves-layout {
+  display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 12px 20px; align-items: start;
+  grid-template-areas: "left tabs" "left right";
+}
+.moves-left { grid-area: left; position: sticky; top: 8px; }
+.moves-right { grid-area: right; }
 .mon-card { display: flex; gap: 8px; align-items: center; padding: 0 4px; }
 .mon-card > img { width: 160px; height: 160px; image-rendering: pixelated; }
 .cur-name { font-size: 32px; text-shadow: var(--sh) 0 var(--ink-shadow), 0 var(--sh) var(--ink-shadow), var(--sh) var(--sh) var(--ink-shadow); }
@@ -279,7 +284,7 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
 .move.full:not(.picked) { opacity: .5; }
 .empty-slot { justify-content: center; color: #b8b8c0; cursor: default; background: rgba(255,255,255,.4); border-style: dashed; min-height: 44px; }
 
-.nav-btns { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.nav-btns { display: flex; flex-wrap: nowrap; justify-content: space-between; gap: 8px; margin-top: 14px; }
 .nav-btns .btn { font-size: 32px; min-height: 60px; }
 
 .move-pop {
@@ -293,7 +298,10 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
   position: absolute; top: -4px; right: -2px;
   background: none; border: none; cursor: pointer; font-size: 32px; line-height: 1; color: #707078; padding: 0 4px;
 }
-.detail-hint { margin: 6px 0 0; font-size: 16px; color: #707078; text-shadow: none; }
+.detail-hint {
+  margin: 8px 0 0; font-size: 32px; color: var(--red); --ink-shadow: #f8c8c0;
+  text-shadow: var(--sh) 0 var(--ink-shadow), 0 var(--sh) var(--ink-shadow), var(--sh) var(--sh) var(--ink-shadow);
+}
 .detail-head { display: flex; align-items: center; gap: 6px; padding-right: 28px; }
 .detail-name { font-size: 32px; margin-left: 6px; text-shadow: var(--sh) 0 var(--ink-shadow), 0 var(--sh) var(--ink-shadow), var(--sh) var(--sh) var(--ink-shadow); }
 .detail-stats { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 8px 0 4px; font-size: 32px; }
@@ -317,6 +325,16 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
 .recap-mon ul { list-style: none; padding: 0; margin: 4px 0 0; display: grid; gap: 2px; }
 .recap-mon li { display: flex; align-items: center; gap: 8px; font-size: 32px; white-space: nowrap; text-shadow: var(--sh) 0 var(--ink-shadow), 0 var(--sh) var(--ink-shadow), var(--sh) var(--sh) var(--ink-shadow); }
 
+/* Écrans peu hauts : colonne de gauche plus compacte pour qu'elle tienne entière à l'écran */
+@media (max-height: 760px) and (min-width: 761px) {
+  .mon-card > img { width: 80px; height: 80px; }
+  .move-slots { margin-top: 8px; }
+  .move-slots .move { padding: 1px 6px; }
+  .empty-slot { min-height: 40px; }
+  .nav-btns { margin-top: 8px; }
+  .nav-btns .btn { min-height: 52px; }
+}
+
 @media (max-width: 1240px) {
   .move-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .recap-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -325,7 +343,8 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
   .move-list { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
-  .moves-layout { grid-template-columns: 1fr; }
+  .moves-layout { grid-template-columns: 1fr; grid-template-areas: "tabs" "left" "right"; }
+  .mon-tabs { justify-content: center; }
   .moves-left { position: static; }
   .move-pop { left: 8px; right: 8px; bottom: 8px; top: auto; width: auto; max-height: 60vh; overflow: auto; }
   .move-list { grid-template-columns: 1fr; }
