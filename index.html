@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokémon Masta — Ton équipe</title>
+  <link rel="icon" href="assets/pokemon/445.png">
+  <link rel="preload" href="assets/ui/platine.woff" as="font" type="font/woff" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="logo">POKÉMON MASTA</span>
+  </header>
+
+  <!-- Étape 1 : pseudo + icône -->
+  <main id="step-trainer" class="step">
+    <h1 class="pixel">Qui es-tu, dresseur ?</h1>
+    <label class="field">
+      <span>Ton pseudo</span>
+      <input id="pseudo" type="text" maxlength="12" autocomplete="off" placeholder="Sacha">
+    </label>
+    <p class="hint">Choisis ton personnage</p>
+    <div id="trainers" class="trainers"></div>
+    <div class="actions">
+      <p id="trainer-error" class="error" hidden></p>
+      <button id="to-team" class="btn primary">Choisir mon équipe</button>
+    </div>
+  </main>
+
+  <!-- Étape 2 : les 6 Pokémon -->
+  <main id="step-team" class="step" hidden>
+    <section class="team-bar">
+      <button id="back" class="me" title="Changer de pseudo ou de personnage">
+        <span id="me-sprite" class="sprite"></span>
+        <span id="me-name"></span>
+      </button>
+      <div id="slots" class="slots"></div>
+      <button id="validate" class="btn primary">Valider mon équipe</button>
+    </section>
+    <section class="filters">
+      <input id="search" type="search" placeholder="Rechercher un Pokémon" autocomplete="off">
+      <div id="types" class="types"></div>
+    </section>
+    <p id="team-error" class="error center" hidden></p>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <!-- Étape 3 : 8 attaques par Pokémon -->
+  <main id="step-moves" class="step wide" hidden>
+    <nav id="mon-tabs" class="mon-tabs" aria-label="Pokémon de l'équipe"></nav>
+    <div class="moves-layout">
+      <aside class="moves-left">
+        <div class="frame mon-card">
+          <img id="cur-img" alt="" width="160" height="160">
+          <div>
+            <div id="cur-name" class="cur-name"></div>
+            <div id="cur-types" class="type-icons"></div>
+            <div id="cur-count" class="cur-count"></div>
+          </div>
+        </div>
+        <ol id="move-slots" class="move-slots"></ol>
+        <div class="nav-btns">
+          <button id="prev-mon" class="btn">Précédent</button>
+          <button id="next-mon" class="btn primary">Suivant</button>
+        </div>
+        <p id="moves-error" class="error center" hidden></p>
+      </aside>
+      <section class="moves-right">
+        <div class="filters">
+          <input id="move-search" type="search" placeholder="Rechercher une attaque" autocomplete="off">
+          <p class="detail-hint">Clic : voir la fiche. Double-clic : apprendre directement.</p>
+        </div>
+        <div id="move-list" class="move-list"></div>
+      </section>
+    </div>
+    <div id="move-detail" class="frame move-pop" role="dialog" aria-label="Fiche de l'attaque" hidden></div>
+  </main>
+
+  <!-- Étape 4 : récap -->
+  <main id="step-done" class="step" hidden>
+    <h1 id="done-title" class="pixel">Équipe prête !</h1>
+    <div id="recap" class="recap"></div>
+    <p id="send-status" class="hint center" role="status"></p>
+    <div class="actions">
+      <button id="edit" class="btn">Modifier mon équipe</button>
+      <button id="send" class="btn primary">Envoyer mon équipe</button>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
