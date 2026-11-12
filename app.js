@@ -1,4 +1,4 @@
-// Pokémon Masta — sélection d'équipe (pseudo + personnage, puis 6 Pokémon)
+// Pokémon — sélection d'équipe (pseudo + personnage, puis 6 Pokémon)
 
 const TEAM_SIZE = 6;
 const MOVES_PER_MON = 6;
@@ -389,6 +389,17 @@ function renderRecap() {
 $("edit").addEventListener("click", goTeam);
 
 // ---- Démarrage ----
+// Écran d'accueil : un clic (ou Entrée / Espace) mène au choix du pseudo et du personnage
+function closeSplash() {
+  const sp = $("splash");
+  if (!sp || sp.classList.contains("out")) return;
+  sp.classList.add("out");
+  document.body.classList.remove("splash-on");
+  setTimeout(() => { sp.remove(); if (!$("step-trainer").hidden) $("pseudo").focus(); }, 500);
+}
+$("splash").addEventListener("click", closeSplash);
+document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && $("splash")) { e.preventDefault(); closeSplash(); } });
+
 Promise.all(["roster", "moves", "learnsets"].map((f) => fetch(`data/${f}.json`).then((r) => r.json())))
   .then(([data, moves, learn]) => {
     roster = data;
@@ -490,7 +501,7 @@ async function buildSubmission() {
   const data = teamData();
   const name = slug(state.pseudo);
   const fields = [
-    ["_subject", `Pokémon Masta — équipe de ${state.pseudo}`],
+    ["_subject", `Pokémon — équipe de ${state.pseudo}`],
     ["_template", "table"],
     ["_captcha", "false"],
     ["Pseudo", state.pseudo],

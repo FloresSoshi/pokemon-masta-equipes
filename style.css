@@ -372,3 +372,26 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
   .badge { width: 24px; height: 24px; font-size: 16px; }
   .trainers { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 }
+
+/* ---- Écran d'accueil ---- */
+body.splash-on { overflow: hidden; }
+.splash {
+  position: fixed; inset: 0; z-index: 100; cursor: pointer; overflow: hidden; outline: none;
+  background: #8db07e url(assets/accueil/fond.jpg) center bottom / 100% auto no-repeat;
+  transition: opacity .5s;
+}
+.splash.out { opacity: 0; pointer-events: none; }
+.splash::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(20,20,40,.45), transparent 35%, transparent 75%, rgba(20,20,40,.55)); }
+.splash-bg { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; }
+.splash-logo { position: absolute; z-index: 1; top: 2vh; left: 50%; transform: translateX(-50%); height: 21vh; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
+.splash-press {
+  position: absolute; z-index: 1; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 48px; color: #f8f8f8;
+  text-shadow: 3px 0 #383840, 0 3px #383840, 3px 3px #383840; animation: blink 1.2s steps(2, start) infinite;
+}
+@keyframes blink { to { visibility: hidden; } }
+@media (max-aspect-ratio: 4/3) {
+  .splash { background-size: cover; background-position: center; }
+  .splash-bg { inset: 0; height: 100%; object-fit: cover; }
+  .splash-logo { height: auto; width: 86vw; top: 4vh; }
+  .splash-press { font-size: 32px; }
+}

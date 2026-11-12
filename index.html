@@ -3,14 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Pokémon Masta — Ton équipe</title>
+  <title>Pokémon — Ton équipe</title>
   <link rel="icon" type="image/png" href="assets/ui/favicon.png">
   <link rel="preload" href="assets/ui/platine.woff" as="font" type="font/woff" crossorigin>
+  <link rel="preload" href="assets/accueil/logo.png" as="image">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="splash-on">
+  <!-- Écran d'accueil : scène animée + logo, clic pour continuer -->
+  <div id="splash" class="splash" role="button" tabindex="0" aria-label="Clique pour continuer">
+    <video class="splash-bg" src="assets/accueil/anim.mp4" poster="assets/accueil/fond.jpg" autoplay muted loop playsinline aria-hidden="true"></video>
+    <img class="splash-logo" src="assets/accueil/logo.png" alt="Pokémon">
+    <div class="splash-press">Clique pour continuer</div>
+  </div>
+
   <header class="topbar">
-    <span class="logo">POKÉMON MASTA</span>
+    <span class="logo">POKÉMON</span>
   </header>
 
   <!-- Étape 1 : pseudo + icône -->
