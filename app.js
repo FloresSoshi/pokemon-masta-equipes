@@ -16,8 +16,8 @@ const TRAINERS = [
   ["riley", "Armand"], ["cheryl", "Cheryl"], ["marley", "Marley"], ["buck", "Buck"],
   ["mira", "Mira"], ["jasmine", "Jasmine"], ["palmer", "Palmer"], ["thorton", "Thorton"],
   ["prof_rowan", "Professeur Sorbier"], ["prof_oak", "Professeur Chen"], ["rich_boy", "Petit riche"], ["socialite", "Mondaine"],
-  ["gentleman", "Gentleman"], ["idol", "Idole"], ["guitarist", "Guitariste"], ["swimmer_f", "Nageuse"],
-  ["swimmer_m", "Nageur"], ["fisherman", "Pêcheur"], ["sailor", "Marin"], ["policeman", "Policier"],
+  ["gentleman", "Gentleman"], ["idol", "Idole"], ["guitarist", "Guitariste"],
+  ["fisherman", "Pêcheur"], ["sailor", "Marin"], ["policeman", "Policier"],
 ];
 
 // Couleurs de type (types de l'époque Platine : pas de type Fée)
@@ -409,23 +409,26 @@ Promise.all(["roster", "moves", "learnsets"].map((f) => fetch(`data/${f}.json`).
   });
 
 // ---- Envoi par mail (FormSubmit : pas de serveur, pièces jointes jusqu'à 10 Mo) ----
-// Le mail contient : un résumé lisible, equipe-<pseudo>.json (toutes les données pour la conception du jeu),
-// une carte image de l'équipe, et les sprites (6 Pokémon + planche du personnage).
-const SEND_ENDPOINT = "https://formsubmit.co/ajax/contact@quartzsolutions.fr";
+// Le mail contient : un résumé lisible + en pièces jointes la carte de l'équipe, l'image du personnage,
+// les 6 Pokémon (agrandis, pixels nets) et equipe-<pseudo>.json (toutes les données pour la conception du jeu).
+// Envoi en formulaire classique (iframe cachée) : le mode AJAX de FormSubmit ne transmet pas les pièces jointes.
+const SEND_ENDPOINT = "https://formsubmit.co/contact@quartzsolutions.fr";
 
 const slug = (s) => norm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "dresseur";
 const trainerName = (key) => (TRAINERS.find(([k]) => k === key) || [key, key])[1];
+
+const SITE_URL = "https://floressoshi.github.io/pokemon-masta-equipes/";
 
 function teamData() {
   return {
     format: "pokemon-masta-equipe/1",
     envoye_le: new Date().toISOString(),
     pseudo: state.pseudo,
-    personnage: { cle: state.trainer, nom: trainerName(state.trainer), planche: `${state.trainer}.png`, vue_de_face: "images 4 à 7 (32×32) d'une planche 32×512" },
+    personnage: { cle: state.trainer, nom: trainerName(state.trainer), planche: `${SITE_URL}assets/dresseurs/${state.trainer}.png`, vue_de_face: "images 4 à 7 (32×32) d'une planche 32×512 (décompilé pret/pokeplatinum, res/graphics/field_sprites)" },
     equipe: state.team.map((id, i) => {
       const p = byId.get(id);
       return {
-        emplacement: i + 1, id, nom: p.fr, nom_en: p.en, types: p.types, sprite: `pokemon-${id}.png`,
+        emplacement: i + 1, id, nom: p.fr, nom_en: p.en, types: p.types, sprite: `${SITE_URL}assets/pokemon/${id}.png`,
         attaques: state.moves[id].map((mid) => {
           const m = MOVES[mid];
           return { id: m.id, nom: m.fr, nom_en: m.en, type: m.type, categorie: m.cat, puissance: m.power, precision: m.acc, pp: m.pp, priorite: m.prio, description: m.desc };
@@ -473,27 +476,66 @@ async function teamCard() {
   return new Promise((ok) => c.toBlob(ok, "image/png"));
 }
 
+// Image agrandie sans flou (pixel art) : sprite entier ou une case d'une planche
+async function bigPng(src, scale, crop) {
+  const img = await loadImg(src);
+  const [sx, sy, sw, sh] = crop || [0, 0, img.width, img.height];
+  const c = document.createElement("canvas"); c.width = sw * scale; c.height = sh * scale;
+  const g = c.getContext("2d"); g.imageSmoothingEnabled = false;
+  g.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  return new Promise((ok) => c.toBlob(ok, "image/png"));
+}
+
 async function buildSubmission() {
   const data = teamData();
-  const fd = new FormData();
-  fd.append("_subject", `Pokémon Masta — équipe de ${state.pseudo}`);
-  fd.append("_template", "table");
-  fd.append("_captcha", "false");
-  fd.append("Pseudo", state.pseudo);
-  fd.append("Personnage", `${trainerName(state.trainer)} (${state.trainer})`);
-  data.equipe.forEach((p) => {
-    fd.append(`Pokémon ${p.emplacement}`, `${p.nom} (#${p.id}) : ${p.attaques.map((a) => a.nom).join(", ")}`);
-  });
-  fd.append("Données", "Toutes les données sont dans le fichier JSON joint (à transférer à la session du jeu).");
   const name = slug(state.pseudo);
-  fd.append("donnees", new File([JSON.stringify(data, null, 2)], `equipe-${name}.json`, { type: "application/json" }));
-  fd.append("carte", new File([await teamCard()], `carte-equipe-${name}.png`, { type: "image/png" }));
-  const blob = async (url) => (await fetch(url)).blob();
-  fd.append("personnage", new File([await blob(`assets/dresseurs/${state.trainer}.png`)], `${state.trainer}.png`, { type: "image/png" }));
+  const fields = [
+    ["_subject", `Pokémon Masta — équipe de ${state.pseudo}`],
+    ["_template", "table"],
+    ["_captcha", "false"],
+    ["Pseudo", state.pseudo],
+    ["Personnage", `${trainerName(state.trainer)} (${state.trainer})`],
+    ...data.equipe.map((p) => [`Pokémon ${p.emplacement}`, `${p.nom} (#${p.id}) : ${p.attaques.map((a) => a.nom).join(", ")}`]),
+    ["Pièces jointes", "Carte de l'équipe, personnage, les 6 Pokémon et le fichier JSON avec toutes les données (à transférer à la session du jeu)."],
+  ];
+  const png = (blob, file) => new File([blob], file, { type: "image/png" });
+  const files = [
+    ["carte", png(await teamCard(), `1-carte-equipe-${name}.png`)],
+    ["personnage", png(await bigPng(`assets/dresseurs/${state.trainer}.png`, 4, [0, 128, 32, 32]), `2-personnage-${state.trainer}.png`)],
+  ];
   for (const p of data.equipe) {
-    fd.append(`sprite${p.emplacement}`, new File([await blob(`assets/pokemon/${p.id}.png`)], `pokemon-${p.id}.png`, { type: "image/png" }));
+    files.push([`pokemon${p.emplacement}`, png(await bigPng(`assets/pokemon/${p.id}.png`, 2), `3-pokemon-${p.emplacement}-${slug(p.nom)}-${p.id}.png`)]);
   }
-  return fd;
+  files.push(["donnees", new File([JSON.stringify(data, null, 2)], `4-equipe-${name}.json`, { type: "application/json" })]);
+  return { fields, files };
+}
+
+// Poste un vrai formulaire multipart vers FormSubmit dans une iframe cachée (pas de rechargement de la page)
+function postForm({ fields, files }) {
+  return new Promise((ok, ko) => {
+    let frame = $("send-frame");
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.id = frame.name = "send-frame";
+      frame.hidden = true;
+      document.body.append(frame);
+    }
+    const form = document.createElement("form");
+    form.method = "POST"; form.action = SEND_ENDPOINT; form.enctype = "multipart/form-data"; form.target = frame.name;
+    form.hidden = true;
+    for (const [k, v] of fields) {
+      const i = document.createElement("input"); i.type = "hidden"; i.name = k; i.value = v; form.append(i);
+    }
+    for (const [k, file] of files) {
+      const i = document.createElement("input"); i.type = "file"; i.name = k;
+      const dt = new DataTransfer(); dt.items.add(file); i.files = dt.files;
+      form.append(i);
+    }
+    const timer = setTimeout(() => { form.remove(); ko(new Error("délai dépassé")); }, 60000);
+    frame.onload = () => { clearTimeout(timer); form.remove(); ok(); };
+    document.body.append(form);
+    form.submit();
+  });
 }
 
 $("send").addEventListener("click", async () => {
@@ -503,9 +545,7 @@ $("send").addEventListener("click", async () => {
   btn.classList.add("off");
   status.textContent = "Envoi en cours…";
   try {
-    const res = await fetch(SEND_ENDPOINT, { method: "POST", body: await buildSubmission(), headers: { Accept: "application/json" } });
-    const out = await res.json().catch(() => ({}));
-    if (!res.ok || String(out.success) === "false") throw new Error(out.message || `HTTP ${res.status}`);
+    await postForm(await buildSubmission());
     $("done-title").textContent = "Équipe envoyée !";
     status.textContent = "C'est parti, Léo a bien reçu ton équipe. Tu peux fermer la page.";
     btn.hidden = true;
