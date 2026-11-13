@@ -12,9 +12,13 @@
 <body class="splash-on">
   <!-- Écran d'accueil : scène animée + logo, clic pour continuer -->
   <div id="splash" class="splash" role="button" tabindex="0" aria-label="Clique pour continuer">
-    <video class="splash-bg" src="assets/accueil/anim.mp4" poster="assets/accueil/fond.jpg" autoplay muted loop playsinline aria-hidden="true"></video>
+    <div class="splash-stage" aria-hidden="true">
+      <img class="splash-sides" src="assets/accueil/fond.jpg" alt="">
+      <video class="splash-bg" src="assets/accueil/anim.mp4" poster="assets/accueil/poster.jpg" autoplay muted loop playsinline></video>
+    </div>
     <img class="splash-logo" src="assets/accueil/logo.png" alt="Pokémon">
     <div class="splash-press">Clique pour continuer</div>
+    <div class="splash-credit">Animation : pixeladdy</div>
   </div>
 
   <header class="topbar">

@@ -374,24 +374,32 @@ button, input { font-family: inherit; font-size: inherit; color: inherit; -webki
 }
 
 /* ---- Écran d'accueil ---- */
+/* Animation d'origine de pixeladdy (vidéo verticale) au centre, côtés prolongés en image fixe.
+   La « scène » garde les proportions du décor (2752×1536) et couvre l'écran : la vidéo reste calée sur le décor. */
 body.splash-on { overflow: hidden; }
 .splash {
   position: fixed; inset: 0; z-index: 100; cursor: pointer; overflow: hidden; outline: none;
-  background: #8db07e url(assets/accueil/fond.jpg) center bottom / 100% auto no-repeat;
-  transition: opacity .5s;
+  background: #9a9aa6; transition: opacity .5s;
 }
 .splash.out { opacity: 0; pointer-events: none; }
-.splash::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(20,20,40,.45), transparent 35%, transparent 75%, rgba(20,20,40,.55)); }
-.splash-bg { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; }
-.splash-logo { position: absolute; z-index: 1; top: 2vh; left: 50%; transform: translateX(-50%); height: 21vh; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
+.splash::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(20,20,40,.45), transparent 30%, transparent 75%, rgba(20,20,40,.55)); }
+.splash-stage {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); aspect-ratio: 2752 / 1536;
+  width: max(100vw, 179.17vh); width: max(100vw, 179.17dvh);
+}
+.splash-sides, .splash-bg { position: absolute; top: 0; height: 100%; image-rendering: pixelated; }
+.splash-sides { left: 0; width: 100%; }
+.splash-bg { left: 50%; width: auto; aspect-ratio: 1080 / 1920; transform: translateX(-50%); }
+.splash-logo { position: absolute; z-index: 1; top: 1.5vh; left: 50%; transform: translateX(-50%); height: 18vh; filter: drop-shadow(0 6px 0 rgba(0,0,0,.35)); }
 .splash-press {
   position: absolute; z-index: 1; bottom: 6vh; left: 0; right: 0; text-align: center; font-size: 48px; color: #f8f8f8;
   text-shadow: 3px 0 #383840, 0 3px #383840, 3px 3px #383840; animation: blink 1.2s steps(2, start) infinite;
 }
+.splash-credit { position: absolute; z-index: 1; right: 10px; bottom: 6px; font-size: 16px; color: #f8f8f8; opacity: .75; text-shadow: 2px 2px #383840; }
 @keyframes blink { to { visibility: hidden; } }
+/* Écran plus large que le décor : on cale la scène en haut (le bas d'herbe est rogné, le logo ne cache pas la ronde). */
+@media (min-aspect-ratio: 16/9) { .splash-stage { top: 0; transform: translateX(-50%); } }
 @media (max-aspect-ratio: 4/3) {
-  .splash { background-size: cover; background-position: center; }
-  .splash-bg { inset: 0; height: 100%; object-fit: cover; }
   .splash-logo { height: auto; width: 86vw; top: 4vh; }
   .splash-press { font-size: 32px; }
 }
