@@ -397,12 +397,41 @@ function renderRecap() {
 }
 $("edit").addEventListener("click", goTeam);
 
+// ---- Musique (Léo 24/11) : laboratoire, route 201, lac, forêt de Vestigion, en boucle.
+// Le navigateur interdit le son avant un clic : elle démarre au clic sur l'écran d'accueil.
+const MUSIC = ["1-laboratoire", "2-route-201", "3-lac", "4-foret-vestigion"].map((n) => `musique/${n}.mp3`);
+const music = $("music");
+music.volume = 0.35;
+let musicIdx = 0;
+let musicOn = (() => { try { return localStorage.getItem("musique") !== "off"; } catch { return true; } })();
+function playMusic() {
+  if (!musicOn) return;
+  if (!music.src) music.src = MUSIC[musicIdx];
+  music.play().catch(() => {});
+}
+music.addEventListener("ended", () => { musicIdx = (musicIdx + 1) % MUSIC.length; music.src = MUSIC[musicIdx]; playMusic(); });
+function showMusicBtn() {
+  const b = $("music-btn");
+  b.textContent = musicOn ? "♪" : "×";
+  b.classList.toggle("off", !musicOn);
+  b.setAttribute("aria-pressed", String(musicOn));
+  b.title = musicOn ? "Couper la musique" : "Remettre la musique";
+}
+$("music-btn").addEventListener("click", () => {
+  musicOn = !musicOn;
+  try { localStorage.setItem("musique", musicOn ? "on" : "off"); } catch {}
+  if (musicOn) playMusic(); else music.pause();
+  showMusicBtn();
+});
+showMusicBtn();
+
 // ---- Démarrage ----
 // Écran d'accueil : un clic (ou Entrée / Espace) mène au choix du pseudo et du personnage
 function closeSplash() {
   const sp = $("splash");
   if (!sp || sp.classList.contains("out")) return;
   sp.classList.add("out");
+  playMusic();
   document.body.classList.remove("splash-on");
   setTimeout(() => { sp.remove(); if (!$("step-trainer").hidden) $("pseudo").focus(); }, 500);
 }
