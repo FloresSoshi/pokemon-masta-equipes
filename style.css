@@ -36,7 +36,7 @@ body {
   background-position: 0 0, 16px 16px;
 }
 [hidden] { display: none !important; }
-button, input { font-family: inherit; font-size: inherit; color: inherit; -webkit-font-smoothing: none; }
+button, input, textarea { font-family: inherit; font-size: inherit; color: inherit; -webkit-font-smoothing: none; }
 
 /* Ombre de texte DS : à droite, en bas et en diagonale */
 .ds-text, .pixel, .btn, .field span, .hint, .error, .me, .mon .name, .type-chip, .empty, .field input, .filters input {
@@ -413,3 +413,17 @@ body.splash-on { overflow: hidden; }
   .splash-logo { height: auto; width: 86vw; top: 4vh; }
   .splash-press { font-size: 32px; }
 }
+
+/* ---- Notes sous les attaques ---- */
+.notes { display: block; margin-top: 12px; }
+.notes span { display: block; font-size: 24px; margin-bottom: 4px; text-shadow: var(--sh) 0 var(--ink-shadow), 0 var(--sh) var(--ink-shadow), var(--sh) var(--sh) var(--ink-shadow); }
+.notes textarea {
+  display: block; width: 100%; box-sizing: border-box; resize: vertical; min-height: 120px;
+  font-size: 24px; line-height: 1.1; padding: 2px 6px; outline: none;
+  border-style: solid; border-width: calc(var(--px) * 8);
+  border-image: url("assets/ui/standard_system.png") 8 fill / calc(var(--px) * 8) stretch;
+  background: transparent;
+}
+.notes textarea::placeholder { color: #a0a0a8; }
+.recap-notes { margin: 6px 4px 0; font-size: 22px; line-height: 1.1; color: #505058; white-space: pre-wrap; word-break: break-word; }
+@media (max-width: 700px) { .notes span, .notes textarea, .recap-notes { font-size: 16px; } }

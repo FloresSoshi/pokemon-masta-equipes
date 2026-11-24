@@ -1,7 +1,7 @@
-// Pokémon — sélection d'équipe (pseudo + personnage, puis 6 Pokémon)
+// Pokémon — sélection d'équipe (pseudo + personnage, 6 Pokémon, 8 attaques chacun + notes)
 
 const TEAM_SIZE = 6;
-const MOVES_PER_MON = 6;
+const MOVES_PER_MON = 8;
 
 const TRAINERS = [
   ["player_m", "Lucas"], ["player_f", "Aurore"], ["barry", "Barry"], ["cynthia", "Cynthia"],
@@ -36,7 +36,7 @@ const deep = (hex) => `rgb(${rgb(hex).map((v) => Math.round(v * 0.45))})`;
 const esc = (s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-const state = { pseudo: "", trainer: null, team: [], search: "", type: null, moves: {}, cur: 0, detail: null, moveSearch: "" };
+const state = { pseudo: "", trainer: null, team: [], search: "", type: null, moves: {}, notes: {}, cur: 0, detail: null, moveSearch: "" };
 let roster = [];
 let byId = new Map();
 let MOVES = {};      // id -> attaque (valeurs de l'époque Platine)
@@ -45,7 +45,7 @@ let LEARN = {};      // id Pokémon -> ids des attaques apprenables dans Platine
 // ---- Brouillon local (confort uniquement : la page marche sans) ----
 const DRAFT_KEY = "pokemon-masta-draft";
 function saveDraft() {
-  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ pseudo: state.pseudo, trainer: state.trainer, team: state.team, moves: Object.fromEntries(state.team.map((id) => [id, state.moves[id] || []])) })); } catch {}
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ pseudo: state.pseudo, trainer: state.trainer, team: state.team, moves: Object.fromEntries(state.team.map((id) => [id, state.moves[id] || []])), notes: Object.fromEntries(state.team.map((id) => [id, state.notes[id] || ""])) })); } catch {}
 }
 function loadDraft() {
   try { return JSON.parse(localStorage.getItem(DRAFT_KEY)) || {}; } catch { return {}; }
@@ -154,7 +154,7 @@ function renderGrid() {
 
 function toggle(id) {
   const pos = state.team.indexOf(id);
-  if (pos >= 0) { state.team.splice(pos, 1); delete state.moves[id]; }
+  if (pos >= 0) { state.team.splice(pos, 1); delete state.moves[id]; delete state.notes[id]; }
   else if (state.team.length < TEAM_SIZE) state.team.push(id);
   else return;
   $("team-error").hidden = true;
@@ -182,14 +182,16 @@ $("validate").addEventListener("click", () => {
   goMon(0);
 });
 
-// ---- Étape 3 : 6 attaques par Pokémon, dans l'ordre de l'équipe ----
+// ---- Étape 3 : 8 attaques par Pokémon, dans l'ordre de l'équipe ----
 const CAT_FR = { physical: "Physique", special: "Spéciale", status: "Statut" };
 // « unknown » = type ??? de Platine (ex. Malédiction), absent des filtres de Pokémon
 const typeLabel = (t) => (TYPES[t] ? TYPES[t][0] : "???");
 const typeIcon = (t) => `<img class="type-icon" src="assets/types/${t}.png" alt="${typeLabel(t)}" title="${typeLabel(t)}">`;
 const curId = () => state.team[state.cur];
 const curMoves = () => (state.moves[curId()] ||= []);
-const isDone = (id) => (state.moves[id] || []).length >= MOVES_PER_MON;
+// 8 attaques, ou toutes celles qu'il peut apprendre s'il en a moins (Qulbutoké : 7)
+const need = (id) => Math.min(MOVES_PER_MON, (LEARN[id] || []).length);
+const isDone = (id) => (state.moves[id] || []).length >= need(id);
 
 function goMon(i) {
   state.cur = i;
@@ -217,19 +219,22 @@ function buildMoveList() {
 function renderMoves() {
   const id = curId();
   const chosen = curMoves();
-  const full = chosen.length >= MOVES_PER_MON;
+  const full = chosen.length >= need(id);
 
   $("mon-tabs").innerHTML = state.team.map((tid, i) => {
     const p = byId.get(tid);
     const n = (state.moves[tid] || []).length;
     return `<button class="mon-tab${i === state.cur ? " on" : ""}${isDone(tid) ? " done" : ""}" data-i="${i}" title="${esc(p.fr)}">
-      <img src="assets/pokemon/${tid}.png" alt="${esc(p.fr)}"><span>${n}/${MOVES_PER_MON}</span></button>`;
+      <img src="assets/pokemon/${tid}.png" alt="${esc(p.fr)}"><span>${n}/${need(tid)}</span></button>`;
   }).join("");
 
-  $("cur-count").textContent = `${chosen.length}/${MOVES_PER_MON} attaques`;
+  $("cur-count").textContent = `${chosen.length}/${need(id)} attaques`;
+  // la zone de notes suit le Pokémon affiché (on ne réécrit pas pendant la frappe sur le même)
+  const notes = $("mon-notes");
+  if (notes.dataset.id !== String(id) || document.activeElement !== notes) { notes.value = state.notes[id] || ""; notes.dataset.id = id; }
 
   let slots = "";
-  for (let i = 0; i < MOVES_PER_MON; i++) {
+  for (let i = 0; i < need(id); i++) {
     const m = MOVES[chosen[i]];
     slots += m
       ? `<li><button class="move picked${state.detail === m.id ? " focus" : ""}" data-mid="${m.id}">${typeIcon(m.type)}<span>${esc(m.fr)}</span></button></li>`
@@ -265,7 +270,7 @@ function renderDetail() {
   if (!m) { pop.hidden = true; popAnchor = null; return; }
   const chosen = curMoves();
   const has = chosen.includes(m.id);
-  const full = chosen.length >= MOVES_PER_MON;
+  const full = chosen.length >= need(curId());
   const val = (v, suffix = "") => (v == null ? "—" : v + suffix);
   pop.innerHTML = `
     <button class="pop-close" data-act="close" aria-label="Fermer">×</button>
@@ -283,7 +288,7 @@ function renderDetail() {
     <p class="detail-desc">${esc(m.desc)}</p>
     <div class="detail-actions">
       ${has ? `<button class="btn" data-act="toggle">Oublier</button>`
-        : full ? `<span class="detail-full">${MOVES_PER_MON} attaques déjà choisies : oublies-en une d'abord.</span>`
+        : full ? `<span class="detail-full">${need(curId())} attaques déjà choisies : oublies-en une d'abord.</span>`
         : `<button class="btn primary" data-act="toggle">Apprendre</button>`}
     </div>`;
   pop.hidden = false;
@@ -314,7 +319,7 @@ function toggleMove(mid) {
   const chosen = curMoves();
   const pos = chosen.indexOf(mid);
   if (pos >= 0) chosen.splice(pos, 1);
-  else if (chosen.length < MOVES_PER_MON) chosen.push(mid);
+  else if (chosen.length < need(curId())) chosen.push(mid);
   else return;
   $("moves-error").hidden = true;
   saveDraft();
@@ -357,7 +362,7 @@ $("move-search").addEventListener("input", (e) => { state.moveSearch = e.target.
 $("mon-tabs").addEventListener("click", (e) => { const b = e.target.closest(".mon-tab"); if (b) goMon(+b.dataset.i); });
 $("prev-mon").addEventListener("click", () => (state.cur === 0 ? goTeam() : goMon(state.cur - 1)));
 $("next-mon").addEventListener("click", () => {
-  const left = MOVES_PER_MON - curMoves().length;
+  const left = need(curId()) - curMoves().length;
   if (left > 0) {
     $("moves-error").textContent = `Encore ${left} attaque${left > 1 ? "s" : ""} à choisir.`;
     $("moves-error").hidden = false;
@@ -369,6 +374,9 @@ $("next-mon").addEventListener("click", () => {
   renderRecap();
   show("step-done");
 });
+
+// Notes libres du Pokémon en cours (idées de sournoiseries, d'attaques…)
+$("mon-notes").addEventListener("input", (e) => { state.notes[e.target.dataset.id || curId()] = e.target.value; saveDraft(); });
 
 // ---- Étape 4 : récap ----
 function renderRecap() {
@@ -383,6 +391,7 @@ function renderRecap() {
       return `<div class="frame recap-mon">
         <div class="recap-head"><span class="badge">${i + 1}</span><img src="assets/pokemon/${id}.png" alt=""><span class="cur-name">${esc(p.fr)}</span></div>
         <ul>${state.moves[id].map((mid) => `<li>${typeIcon(MOVES[mid].type)}<span>${esc(MOVES[mid].fr)}</span></li>`).join("")}</ul>
+        ${state.notes[id] ? `<p class="recap-notes">${esc(state.notes[id])}</p>` : ""}
       </div>`;
     }).join("")}</div>`;
 }
@@ -414,6 +423,7 @@ Promise.all(["roster", "moves", "learnsets"].map((f) => fetch(`data/${f}.json`).
     for (const id of state.team) {
       const ok = new Set(LEARN[id] || []);
       state.moves[id] = ((d.moves || {})[id] || []).filter((m) => ok.has(m)).slice(0, MOVES_PER_MON);
+      state.notes[id] = String((d.notes || {})[id] || "");
     }
     $("pseudo").value = state.pseudo;
     renderTrainers();
@@ -440,6 +450,7 @@ function teamData() {
       const p = byId.get(id);
       return {
         emplacement: i + 1, id, nom: p.fr, nom_en: p.en, types: p.types, sprite: `${SITE_URL}assets/pokemon/${id}.png`,
+        notes: (state.notes[id] || "").trim(),
         attaques: state.moves[id].map((mid) => {
           const m = MOVES[mid];
           return { id: m.id, nom: m.fr, nom_en: m.en, type: m.type, categorie: m.cat, puissance: m.power, precision: m.acc, pp: m.pp, priorite: m.prio, description: m.desc };
@@ -506,7 +517,8 @@ async function buildSubmission() {
     ["_captcha", "false"],
     ["Pseudo", state.pseudo],
     ["Personnage", `${trainerName(state.trainer)} (${state.trainer})`],
-    ...data.equipe.map((p) => [`Pokémon ${p.emplacement}`, `${p.nom} (#${p.id}) : ${p.attaques.map((a) => a.nom).join(", ")}`]),
+    ...data.equipe.flatMap((p) => [[`Pokémon ${p.emplacement}`, `${p.nom} (#${p.id}) : ${p.attaques.map((a) => a.nom).join(", ")}`],
+      ...(p.notes ? [[`Notes Pokémon ${p.emplacement} (${p.nom})`, p.notes]] : [])]),
     ["Pièces jointes", "Carte de l'équipe, personnage, les 6 Pokémon et le fichier JSON avec toutes les données (à transférer à la session du jeu)."],
   ];
   const png = (blob, file) => new File([blob], file, { type: "image/png" });

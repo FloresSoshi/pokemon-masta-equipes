@@ -58,7 +58,7 @@
     <div id="grid" class="grid"></div>
   </main>
 
-  <!-- Étape 3 : 6 attaques par Pokémon -->
+  <!-- Étape 3 : 8 attaques par Pokémon + notes -->
   <main id="step-moves" class="step wide" hidden>
     <div class="moves-layout">
       <nav id="mon-tabs" class="mon-tabs" aria-label="Pokémon de l'équipe"></nav>
@@ -72,6 +72,10 @@
           </div>
         </div>
         <ol id="move-slots" class="move-slots"></ol>
+        <label class="notes">
+          <span>Mets toutes tes idées de sournoiseries et d'attaques</span>
+          <textarea id="mon-notes" rows="4" maxlength="2000" placeholder="Ex. : il se cache dans les hautes herbes puis surgit dans le dos…"></textarea>
+        </label>
         <div class="nav-btns">
           <button id="prev-mon" class="btn">Précédent</button>
           <button id="next-mon" class="btn primary">Suivant</button>
