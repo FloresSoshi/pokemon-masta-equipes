@@ -562,7 +562,29 @@ async function buildSubmission() {
   return { fields, files };
 }
 
-// Poste un vrai formulaire multipart vers FormSubmit dans une iframe cachée (pas de rechargement de la page)
+// 1) Mail principal en AJAX : FormSubmit répond {"success":"true"} seulement s'il a bien pris l'envoi.
+//    C'est lui qui décide du message « envoyé ». Il contient tout en texte, y compris le JSON complet.
+// 2) Mail des pièces jointes (images + JSON) en formulaire dans une iframe cachée : le navigateur ne dit pas
+//    si ça a marché, donc il n'est qu'un bonus. (Avant le 24/11, seul ce 2e envoi existait : un ami a eu
+//    « tu peux fermer la page » sans qu'aucun mail ne parte.)
+const AJAX_ENDPOINT = SEND_ENDPOINT.replace("formsubmit.co/", "formsubmit.co/ajax/");
+
+async function postAjax(fields, data) {
+  const body = Object.fromEntries(fields);
+  body["Données JSON"] = JSON.stringify(data);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 180000); // FormSubmit met parfois 1 à 2 min à répondre
+  try {
+    const r = await fetch(AJAX_ENDPOINT, {
+      method: "POST", signal: ctrl.signal,
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || String(j.success) !== "true") throw new Error(j.message || `réponse ${r.status}`);
+  } finally { clearTimeout(timer); }
+}
+
 function postForm({ fields, files }) {
   return new Promise((ok, ko) => {
     let frame = $("send-frame");
@@ -583,28 +605,51 @@ function postForm({ fields, files }) {
       const dt = new DataTransfer(); dt.items.add(file); i.files = dt.files;
       form.append(i);
     }
-    const timer = setTimeout(() => { form.remove(); ko(new Error("délai dépassé")); }, 60000);
+    const timer = setTimeout(() => { form.remove(); ko(new Error("délai dépassé")); }, 120000);
     frame.onload = () => { clearTimeout(timer); form.remove(); ok(); };
     document.body.append(form);
     form.submit();
   });
 }
 
+// Secours si l'envoi échoue : le joueur télécharge son équipe (JSON + carte) et l'envoie à Léo lui-même.
+let lastSubmission = null;
+function saveFile(file) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(file); a.download = file.name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+$("download").addEventListener("click", async () => {
+  const sub = lastSubmission || await buildSubmission();
+  for (const [k, f] of sub.files) if (k === "donnees" || k === "carte") saveFile(f);
+});
+
 $("send").addEventListener("click", async () => {
   const btn = $("send"), status = $("send-status");
   if (btn.dataset.busy) return;
   btn.dataset.busy = "1";
   btn.classList.add("off");
-  status.textContent = "Envoi en cours…";
+  status.textContent = "Envoi en cours… ça peut prendre jusqu'à 2 minutes, ne ferme pas la page.";
   try {
-    await postForm(await buildSubmission());
+    const sub = lastSubmission = await buildSubmission();
+    const data = teamData();
+    const attachments = postForm({
+      fields: sub.fields.map(([k, v]) => (k === "_subject" ? [k, `${v} (pièces jointes)`] : [k, v])),
+      files: sub.files,
+    }).catch((e) => console.warn("pièces jointes :", e));
+    await postAjax(sub.fields, data);
+    status.textContent = "Équipe reçue par Léo ! Encore quelques secondes pour les images…";
+    await attachments;
     $("done-title").textContent = "Équipe envoyée !";
-    status.textContent = "C'est parti, Léo a bien reçu ton équipe. Tu peux fermer la page.";
+    status.textContent = "C'est bon, Léo a bien reçu ton équipe. Tu peux fermer la page.";
     btn.hidden = true;
+    $("download").hidden = true;
   } catch (err) {
     console.error(err);
-    status.textContent = "L'envoi n'a pas marché. Vérifie ta connexion et réessaie.";
+    status.textContent = "L'envoi n'a pas marché. Réessaie dans une minute. Si ça bloque encore, clique sur « Télécharger mon équipe » et envoie les 2 fichiers à Léo.";
     btn.classList.remove("off");
+    $("download").hidden = false;
   } finally {
     delete btn.dataset.busy;
   }
