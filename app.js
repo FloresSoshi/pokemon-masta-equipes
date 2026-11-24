@@ -569,9 +569,24 @@ async function buildSubmission() {
 //    « tu peux fermer la page » sans qu'aucun mail ne parte.)
 const AJAX_ENDPOINT = SEND_ENDPOINT.replace("formsubmit.co/", "formsubmit.co/ajax/");
 
+// FormSubmit renvoie parfois une erreur 500 au hasard (vu le 24/11, surtout avec 2 envois au même moment) :
+// on réessaie jusqu'à 3 fois, et les pièces jointes ne partent qu'après.
+async function postAjaxRetry(fields, data, onRetry) {
+  for (let essai = 1; ; essai++) {
+    try { return await postAjax(fields, data); } catch (e) {
+      if (essai >= 3) throw e;
+      onRetry(essai, e);
+      await new Promise((r) => setTimeout(r, 8000));
+    }
+  }
+}
+
 async function postAjax(fields, data) {
   const body = Object.fromEntries(fields);
-  body["Données JSON"] = JSON.stringify(data);
+  // Version courte (numéros seulement) : le JSON complet part en pièce jointe ;
+  // celui-ci suffit à tout reconstruire avec data/*.json.
+  body["Données (numéros)"] = JSON.stringify({ pseudo: data.pseudo, personnage: data.personnage.cle,
+    equipe: data.equipe.map((p) => ({ id: p.id, attaques: p.attaques.map((a) => a.id), notes: p.notes })) });
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 180000); // FormSubmit met parfois 1 à 2 min à répondre
   try {
@@ -634,13 +649,15 @@ $("send").addEventListener("click", async () => {
   try {
     const sub = lastSubmission = await buildSubmission();
     const data = teamData();
-    const attachments = postForm({
+    await postAjaxRetry(sub.fields, data, (n, e) => {
+      console.warn(`essai ${n} raté :`, e);
+      status.textContent = `Le serveur a un raté, nouvel essai (${n + 1}/3)… ne ferme pas la page.`;
+    });
+    status.textContent = "Équipe reçue par Léo ! Encore quelques secondes pour les images…";
+    await postForm({
       fields: sub.fields.map(([k, v]) => (k === "_subject" ? [k, `${v} (pièces jointes)`] : [k, v])),
       files: sub.files,
     }).catch((e) => console.warn("pièces jointes :", e));
-    await postAjax(sub.fields, data);
-    status.textContent = "Équipe reçue par Léo ! Encore quelques secondes pour les images…";
-    await attachments;
     $("done-title").textContent = "Équipe envoyée !";
     status.textContent = "C'est bon, Léo a bien reçu ton équipe. Tu peux fermer la page.";
     btn.hidden = true;
